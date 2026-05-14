@@ -83,7 +83,7 @@ h1 {
 }
 
 #enigmaSvg {
-  width: min(100%, 1800px);
+  width: min(100%, 2000px);
   height: auto;
   display: block;
 }
