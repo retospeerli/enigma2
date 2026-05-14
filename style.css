@@ -1,13 +1,13 @@
 :root {
   --bg: #111722;
   --panel: #17202c;
-  --panel2: #202b3a;
   --line: #8793a8;
   --text: #f4f7fb;
   --muted: #b9c4d6;
   --accent: #ffc247;
-  --green: #62d89a;
+  --back: #62d89a;
   --danger: #ff5e66;
+  --purple: #b88df0;
 }
 
 * {
@@ -209,7 +209,7 @@ input[type="range"] {
 }
 
 #enigmaSvg {
-  width: min(98vw, 1400px);
+  width: min(98vw, 1700px);
   max-width: 100%;
   display: block;
 }
@@ -246,36 +246,44 @@ input[type="range"] {
 
 .rotor-label {
   fill: var(--accent);
-  font-size: 24px;
+  font-size: 25px;
   font-weight: 950;
   text-anchor: middle;
 }
 
 .rotor-position {
   fill: white;
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 950;
   text-anchor: middle;
   dominant-baseline: middle;
 }
 
-.letter-circle {
+.letter-circle,
+.reflector-letter,
+.io-letter {
   fill: #0c121d;
   stroke: #66748e;
   stroke-width: 2;
 }
 
-.letter-circle.active-in {
+.letter-circle.active-forward,
+.io-letter.active-forward,
+.reflector-letter.active-forward {
   fill: var(--accent);
   stroke: #ffd98a;
 }
 
-.letter-circle.active-out {
-  fill: var(--green);
+.letter-circle.active-back,
+.io-letter.active-back,
+.reflector-letter.active-back {
+  fill: var(--back);
   stroke: #baf5d1;
 }
 
-.letter-text {
+.letter-text,
+.reflector-letter-text,
+.io-text {
   fill: white;
   font-size: 13px;
   font-weight: 950;
@@ -284,26 +292,36 @@ input[type="range"] {
   pointer-events: none;
 }
 
-.letter-text.dark {
+.letter-text.dark,
+.reflector-letter-text.dark,
+.io-text.dark {
   fill: #111;
 }
 
 .radial-wire {
   fill: none;
   stroke: #7d8798;
-  stroke-width: 2.5;
+  stroke-width: 2.6;
   stroke-linecap: round;
   opacity: .88;
 }
 
-.radial-wire.active {
+.radial-wire.active-forward {
   stroke: var(--accent);
   stroke-width: 6;
   opacity: 1;
   filter: drop-shadow(0 0 10px rgba(255,194,71,.9));
 }
 
-.wire {
+.radial-wire.active-back {
+  stroke: var(--back);
+  stroke-width: 6;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(98,216,154,.9));
+}
+
+.wire,
+.reflector-wire {
   fill: none;
   stroke: var(--line);
   stroke-width: 2.4;
@@ -312,24 +330,43 @@ input[type="range"] {
   opacity: .72;
 }
 
-.wire.active {
+.wire.active-forward,
+.reflector-wire.active-forward {
   stroke: var(--accent);
   stroke-width: 6;
   opacity: 1;
   filter: drop-shadow(0 0 10px rgba(255,194,71,.85));
 }
 
-.socket {
+.wire.active-back,
+.reflector-wire.active-back {
+  stroke: var(--back);
+  stroke-width: 6;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(98,216,154,.85));
+}
+
+.socket,
+.reflector-socket {
   fill: #232d3e;
   stroke: #94a2b8;
   stroke-width: 2;
 }
 
-.socket.active {
+.socket.active-forward,
+.reflector-socket.active-forward {
   fill: var(--accent);
   stroke: #fff5cc;
   stroke-width: 3;
   filter: drop-shadow(0 0 10px rgba(255,194,71,.95));
+}
+
+.socket.active-back,
+.reflector-socket.active-back {
+  fill: var(--back);
+  stroke: #d8ffe8;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(98,216,154,.95));
 }
 
 .bridge-line {
@@ -340,56 +377,44 @@ input[type="range"] {
   opacity: .62;
 }
 
-.bridge-line.active {
+.bridge-line.active-forward {
   stroke: var(--accent);
   stroke-width: 8;
   opacity: 1;
   filter: drop-shadow(0 0 10px rgba(255,194,71,.9));
 }
 
-.reflector {
-  fill: #261f30;
-  stroke: #b08ad8;
+.bridge-line.active-back {
+  stroke: var(--back);
+  stroke-width: 8;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(98,216,154,.9));
+}
+
+.reflector-body {
+  fill: #232d3e;
+  stroke: var(--purple);
   stroke-width: 5;
 }
 
-.reflector.active {
+.reflector-body.active-forward,
+.reflector-body.active-back {
   stroke: var(--accent);
   filter: drop-shadow(0 0 12px rgba(255,194,71,.9));
 }
 
-.reflector-text {
-  fill: white;
-  font-weight: 950;
-  font-size: 24px;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
-.io-letter {
-  fill: #0c121d;
-  stroke: #66748e;
-  stroke-width: 2;
-}
-
-.io-letter.active-in {
+.reflector-label {
   fill: var(--accent);
-}
-
-.io-letter.active-out {
-  fill: var(--green);
-}
-
-.io-text {
-  fill: white;
-  font-size: 14px;
+  font-size: 24px;
   font-weight: 950;
-  dominant-baseline: middle;
   text-anchor: middle;
 }
 
-.io-text.dark {
-  fill: #111;
+.notch-marker {
+  fill: var(--danger);
+  stroke: #ffd2d2;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 6px rgba(255,94,102,.85));
 }
 
 @media (max-width: 950px) {
