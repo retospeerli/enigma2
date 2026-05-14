@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enigma I</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app">
+  <aside class="sidebar">
+    <header class="top">
+      <div>
+        <h1>Enigma I</h1>
+        <p>Historische Rotor-Verschlüsselung ohne Steckerbrett</p>
+      </div>
+      <button id="resetBtn" class="small">↻ Zurücksetzen</button>
+    </header>
+
+    <section class="box">
+      <label for="plainText">Klartext</label>
+      <textarea id="plainText" spellcheck="false" placeholder="Text eingeben..."></textarea>
+
+      <label for="cipherText">Geheimtext</label>
+      <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint der Geheimtext..."></textarea>
+
+      <p class="hint">
+        Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur die Buchstaben A–Z.
+      </p>
+    </section>
+
+    <section class="box">
+      <h2>Startcode</h2>
+      <div class="startcode">
+        <div>
+          <label for="leftRotorStart">Rotor I</label>
+          <select id="leftRotorStart"></select>
+        </div>
+        <div>
+          <label for="middleRotorStart">Rotor II</label>
+          <select id="middleRotorStart"></select>
+        </div>
+        <div>
+          <label for="rightRotorStart">Rotor III</label>
+          <select id="rightRotorStart"></select>
+        </div>
+      </div>
+    </section>
+
+    <section class="box">
+      <h2>Modus</h2>
+      <div class="mode-row">
+        <button id="encryptBtn" class="mode active">🔒 Verschlüsseln</button>
+        <button id="decryptBtn" class="mode">🔓 Entschlüsseln</button>
+      </div>
+    </section>
+
+    <section class="box">
+      <h2>Geschwindigkeit: <span id="speedLabel">3</span> Zeichen pro Sekunde</h2>
+      <input id="speedRange" type="range" min="0.5" max="10" value="3" step="0.5">
+      <div class="range-labels">
+        <span>langsam</span>
+        <span>schnell</span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="startBtn">▶ Start</button>
+      <button id="stepBtn" class="secondary">▶ Einzelschritt</button>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="status">
+      <div>
+        <span>Rotor I</span>
+        <strong id="leftState">A</strong>
+      </div>
+      <div>
+        <span>Rotor II</span>
+        <strong id="middleState">A</strong>
+      </div>
+      <div>
+        <span>Rotor III</span>
+        <strong id="rightState">A</strong>
+      </div>
+      <div>
+        <span>Schritt</span>
+        <strong id="stepState">bereit</strong>
+      </div>
+    </div>
+
+    <svg id="enigmaSvg" viewBox="0 0 1200 760" aria-label="Enigma I Rotoren"></svg>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
