@@ -77,6 +77,17 @@ const LETTER_CIRCLE_R = 14;
 const SOCKET_R = 116;
 const INNER_HOLE_R = 42;
 
+const TRANSFER_CLASSES = [
+  "transfer-1",
+  "transfer-2",
+  "transfer-3",
+  "transfer-4",
+  "transfer-5",
+  "transfer-6",
+  "transfer-7",
+  "transfer-8"
+];
+
 function indexOf(letter) {
   return ALPHABET.indexOf(letter);
 }
@@ -178,41 +189,58 @@ function circularDelta(a, b) {
   return d;
 }
 
-/*
-  Zeichnet eine Verbindung innerhalb des Rotors.
-  Wichtig:
-  - bleibt innerhalb des Rotorkreises
-  - geht nicht durch die Mitte
-  - höchstens 4 Knickpunkte
-  - verschiedene Rotoren bekommen unterschiedliche Bahn-Radien
-*/
 function buildWirePathInsideRotor(cx, startIndex, endIndex, styleSeed) {
   const startAngle = angleOf(startIndex);
   const endAngle = angleOf(endIndex);
-
   const delta = circularDelta(startAngle, endAngle);
-  const direction = delta >= 0 ? 1 : -1;
   const distance = Math.abs(delta);
-
-  const styleRadii = {
-    1: [96, 78, 90, 72],
-    2: [88, 66, 100, 74],
-    3: [102, 84, 68, 92],
-    4: [92, 70, 104, 80]
-  };
-
-  const radii = styleRadii[styleSeed] || styleRadii[1];
+  const direction = delta >= 0 ? 1 : -1;
 
   const start = polar(cx, CY, SOCKET_R, startAngle);
   const end = polar(cx, CY, SOCKET_R, endAngle);
 
-  const a1 = startAngle + direction * Math.min(28, distance * 0.25 + 10);
-  const a2 = startAngle + delta * 0.5;
-  const a3 = endAngle - direction * Math.min(28, distance * 0.25 + 10);
+  const styleRadii = {
+    1: [98, 86, 74],
+    2: [82, 100, 72],
+    3: [92, 76, 104],
+    4: [88, 102, 78]
+  };
 
-  const p1 = polar(cx, CY, radii[startIndex % 4], a1);
-  const p2 = polar(cx, CY, radii[(startIndex + endIndex) % 4], a2);
-  const p3 = polar(cx, CY, radii[endIndex % 4], a3);
+  const radii = styleRadii[styleSeed] || styleRadii[1];
+
+  if (distance <= 35) {
+    const midAngle = startAngle + delta * 0.5;
+    const p1 = polar(cx, CY, radii[0], midAngle);
+
+    return [
+      `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
+      `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+      `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
+    ].join(" ");
+  }
+
+  if (distance <= 80) {
+    const a1 = startAngle + direction * 18;
+    const a2 = endAngle - direction * 18;
+
+    const p1 = polar(cx, CY, radii[0], a1);
+    const p2 = polar(cx, CY, radii[1], a2);
+
+    return [
+      `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
+      `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+      `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
+      `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
+    ].join(" ");
+  }
+
+  const a1 = startAngle + direction * 24;
+  const a2 = startAngle + delta * 0.5;
+  const a3 = endAngle - direction * 24;
+
+  const p1 = polar(cx, CY, radii[startIndex % 3], a1);
+  const p2 = polar(cx, CY, radii[(startIndex + endIndex) % 3], a2);
+  const p3 = polar(cx, CY, radii[endIndex % 3], a3);
 
   return [
     `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
@@ -792,6 +820,10 @@ function updateBridgeVisuals(trace) {
   );
 }
 
+function removeTransferClasses(node) {
+  TRANSFER_CLASSES.forEach(className => node.classList.remove(className));
+}
+
 function clearHighlights() {
   Object.values(bridgeLines).forEach(line => {
     line.classList.remove("active-forward", "active-back");
@@ -799,6 +831,7 @@ function clearHighlights() {
 
   Object.values(ioLetters).forEach(item => {
     item.circle.classList.remove("active-forward", "active-back");
+    removeTransferClasses(item.circle);
     item.text.classList.remove("dark");
   });
 
@@ -809,11 +842,13 @@ function clearHighlights() {
 
     Object.values(visual.letterMap).forEach(item => {
       item.circle.classList.remove("active-forward", "active-back");
+      removeTransferClasses(item.circle);
       item.text.classList.remove("dark");
     });
 
     Object.values(visual.socketMap).flat().forEach(node => {
       node.classList.remove("active-forward", "active-back");
+      removeTransferClasses(node);
     });
 
     Object.values(visual.wireMap).forEach(node => {
@@ -823,11 +858,13 @@ function clearHighlights() {
 
   Object.values(reflectorVisual.letterMap || {}).forEach(item => {
     item.circle.classList.remove("active-forward", "active-back");
+    removeTransferClasses(item.circle);
     item.text.classList.remove("dark");
   });
 
   Object.values(reflectorVisual.socketMap || {}).flat().forEach(node => {
     node.classList.remove("active-forward", "active-back");
+    removeTransferClasses(node);
   });
 
   Object.values(reflectorVisual.wireMap || {}).forEach(node => {
@@ -844,6 +881,38 @@ function highlightAlphabet(letter, direction) {
   item.text.classList.add("dark");
 }
 
+function highlightTransferOnAlphabet(letter, transferClass) {
+  const item = ioLetters[letter];
+  if (!item) return;
+
+  item.circle.classList.add(transferClass);
+  item.text.classList.add("dark");
+}
+
+function highlightTransferOnRotor(key, letter, transferClass) {
+  const visual = rotorVisuals[key];
+
+  if (visual.letterMap[letter]) {
+    visual.letterMap[letter].circle.classList.add(transferClass);
+    visual.letterMap[letter].text.classList.add("dark");
+  }
+
+  if (visual.socketMap[letter]) {
+    visual.socketMap[letter].forEach(socket => socket.classList.add(transferClass));
+  }
+}
+
+function highlightTransferOnReflector(letter, transferClass) {
+  if (reflectorVisual.letterMap[letter]) {
+    reflectorVisual.letterMap[letter].circle.classList.add(transferClass);
+    reflectorVisual.letterMap[letter].text.classList.add("dark");
+  }
+
+  if (reflectorVisual.socketMap[letter]) {
+    reflectorVisual.socketMap[letter].forEach(socket => socket.classList.add(transferClass));
+  }
+}
+
 function highlightRotorStep(key, step, direction) {
   const visual = rotorVisuals[key];
 
@@ -856,21 +925,7 @@ function highlightRotorStep(key, step, direction) {
   visual.radialMap[inLetter]?.classList.add(direction);
   visual.radialMap[outLetter]?.classList.add(direction);
 
-  visual.letterMap[inLetter]?.circle.classList.add(direction);
-  visual.letterMap[inLetter]?.text.classList.add("dark");
-
-  visual.letterMap[outLetter]?.circle.classList.add(direction);
-  visual.letterMap[outLetter]?.text.classList.add("dark");
-
   visual.wireMap[`${rotorIn}-${rotorOut}`]?.classList.add(direction);
-
-  visual.socketMap[rotorIn]?.forEach(socket => {
-    socket.classList.add(direction);
-  });
-
-  visual.socketMap[rotorOut]?.forEach(socket => {
-    socket.classList.add(direction);
-  });
 }
 
 function highlightReflector(step) {
@@ -881,20 +936,32 @@ function highlightReflector(step) {
     "active-forward",
     "active-back"
   );
+}
 
-  reflectorVisual.letterMap[inLetter]?.circle.classList.add("active-forward");
-  reflectorVisual.letterMap[inLetter]?.text.classList.add("dark");
+function highlightTransfers(trace) {
+  highlightTransferOnAlphabet(trace[0].letter, "transfer-1");
+  highlightTransferOnRotor("right", trace[1].screenInput, "transfer-1");
 
-  reflectorVisual.letterMap[outLetter]?.circle.classList.add("active-back");
-  reflectorVisual.letterMap[outLetter]?.text.classList.add("dark");
+  highlightTransferOnRotor("right", trace[1].screenOutput, "transfer-2");
+  highlightTransferOnRotor("middle", trace[2].screenInput, "transfer-2");
 
-  reflectorVisual.socketMap[inLetter]?.forEach(socket => {
-    socket.classList.add("active-forward");
-  });
+  highlightTransferOnRotor("middle", trace[2].screenOutput, "transfer-3");
+  highlightTransferOnRotor("left", trace[3].screenInput, "transfer-3");
 
-  reflectorVisual.socketMap[outLetter]?.forEach(socket => {
-    socket.classList.add("active-back");
-  });
+  highlightTransferOnRotor("left", trace[3].screenOutput, "transfer-4");
+  highlightTransferOnReflector(trace[4].screenInput, "transfer-4");
+
+  highlightTransferOnReflector(trace[4].screenOutput, "transfer-5");
+  highlightTransferOnRotor("left", trace[5].screenInput, "transfer-5");
+
+  highlightTransferOnRotor("left", trace[5].screenOutput, "transfer-6");
+  highlightTransferOnRotor("middle", trace[6].screenInput, "transfer-6");
+
+  highlightTransferOnRotor("middle", trace[6].screenOutput, "transfer-7");
+  highlightTransferOnRotor("right", trace[7].screenInput, "transfer-7");
+
+  highlightTransferOnRotor("right", trace[7].screenOutput, "transfer-8");
+  highlightTransferOnAlphabet(trace[8].letter, "transfer-8");
 }
 
 function prepareRun() {
@@ -953,8 +1020,8 @@ async function processOneCharacter() {
   const outputLetter = trace[8].letter;
 
   updateBridgeVisuals(trace);
+  highlightTransfers(trace);
 
-  highlightAlphabet(char, "active-forward");
   stepState.textContent = `${char} → ?`;
 
   bridgeLines.alphabetToRight.classList.add("active-forward");
@@ -1001,8 +1068,6 @@ async function processOneCharacter() {
 
   bridgeLines.rightToAlphabet.classList.add("active-back");
   await wait(phaseDuration());
-
-  highlightAlphabet(outputLetter, "active-back");
 
   outputText += outputLetter;
   writeOutput();
