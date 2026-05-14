@@ -7,24 +7,35 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="app">
-  <aside class="sidebar">
-    <header class="top">
-      <div>
-        <h1>Enigma I</h1>
-        <p>Drei Rotoren, Umkehrwalze, ohne Steckerbrett</p>
-      </div>
-      <button id="resetBtn" class="small">↻ Zurücksetzen</button>
-    </header>
 
-    <section class="box">
+<main class="app">
+  <header class="topbar">
+    <div>
+      <h1>Enigma I</h1>
+      <p>Drei Rotoren, Umkehrwalze, ohne Steckerbrett</p>
+    </div>
+
+    <div class="status">
+      <div><span>Rotor I</span><strong id="leftState">A</strong></div>
+      <div><span>Rotor II</span><strong id="middleState">A</strong></div>
+      <div><span>Rotor III</span><strong id="rightState">A</strong></div>
+      <div><span>Schritt</span><strong id="stepState">bereit</strong></div>
+    </div>
+  </header>
+
+  <section class="machine">
+    <svg id="enigmaSvg" viewBox="0 0 1800 640" aria-label="Enigma I Maschine"></svg>
+  </section>
+
+  <section class="controls">
+    <section class="box text-box">
       <label for="plainText">Klartext</label>
       <textarea id="plainText" spellcheck="false" placeholder="Text eingeben..."></textarea>
+    </section>
 
+    <section class="box text-box">
       <label for="cipherText">Geheimtext</label>
       <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint der Geheimtext..."></textarea>
-
-      <p class="hint">Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur Buchstaben A–Z.</p>
     </section>
 
     <section class="box">
@@ -62,21 +73,11 @@
       </div>
     </section>
 
-    <section class="actions">
+    <section class="box action-box">
       <button id="startBtn">▶ Start</button>
       <button id="stepBtn" class="secondary">▶ Einzelschritt</button>
+      <button id="resetBtn" class="secondary">↻ Zurücksetzen</button>
     </section>
-  </aside>
-
-  <section class="stage">
-    <div class="status">
-      <div><span>Rotor I</span><strong id="leftState">A</strong></div>
-      <div><span>Rotor II</span><strong id="middleState">A</strong></div>
-      <div><span>Rotor III</span><strong id="rightState">A</strong></div>
-      <div><span>Schritt</span><strong id="stepState">bereit</strong></div>
-    </div>
-
-    <svg id="enigmaSvg" viewBox="0 0 1700 900" aria-label="Enigma I"></svg>
   </section>
 </main>
 
