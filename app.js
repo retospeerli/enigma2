@@ -54,26 +54,31 @@ let middlePos = 0;
 let rightPos = 0;
 
 const rotorVisuals = {};
-const pathLines = {};
-const inputLetters = {};
-const outputLetters = {};
-let reflectorNode = null;
-
-const CX = {
-  input: 80,
-  right: 360,
-  middle: 590,
-  left: 820,
-  reflector: 1060,
-  output: 1120
+const bridgeLines = {};
+const ioLetters = {
+  input: {},
+  output: {}
 };
 
-const CY = 390;
+let reflectorNode = null;
+
+const CY = 430;
+
+const X = {
+  input: 90,
+  right: 390,
+  middle: 640,
+  left: 890,
+  reflector: 1190,
+  output: 1320
+};
+
 const ROTOR_R = 92;
 const LETTER_R = 128;
 const LETTER_CIRCLE_R = 13;
 const SOCKET_R = 90;
-const INNER_R = 37;
+const INNER_HOLE_R = 38;
+const INNER_WIRE_R = 65;
 
 function indexOf(letter) {
   return ALPHABET.indexOf(letter);
@@ -83,12 +88,8 @@ function letterAt(index) {
   return ALPHABET[(index + 26) % 26];
 }
 
-function svgEl(name, attrs = {}) {
-  const el = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attrs).forEach(([key, value]) => {
-    el.setAttribute(key, value);
-  });
-  return el;
+function angleOf(index) {
+  return index * (360 / 26);
 }
 
 function polar(cx, cy, radius, angleDeg) {
@@ -99,8 +100,12 @@ function polar(cx, cy, radius, angleDeg) {
   };
 }
 
-function angleOf(index) {
-  return index * (360 / 26);
+function svgEl(name, attrs = {}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", name);
+  Object.entries(attrs).forEach(([key, value]) => {
+    el.setAttribute(key, value);
+  });
+  return el;
 }
 
 function fillSelect(select) {
@@ -125,36 +130,38 @@ function buildInterface() {
 function buildSvg() {
   svg.innerHTML = "";
 
-  buildInputOutputAlphabet("input", CX.input);
-  buildRotor("right", "Rotor III", "III", CX.right);
-  buildRotor("middle", "Rotor II", "II", CX.middle);
-  buildRotor("left", "Rotor I", "I", CX.left);
-  buildReflector();
-  buildInputOutputAlphabet("output", CX.output);
+  buildInputOutputColumn("input", X.input);
 
-  buildMachineLines();
+  buildRotorVisual("right", "Rotor III", "III", X.right);
+  buildRotorVisual("middle", "Rotor II", "II", X.middle);
+  buildRotorVisual("left", "Rotor I", "I", X.left);
+
+  buildReflector();
+
+  buildInputOutputColumn("output", X.output);
+  buildBridgeLines();
 
   updateRotorVisuals(false);
 }
 
-function buildInputOutputAlphabet(kind, cx) {
-  const group = svgEl("g", { id: `${kind}Alphabet` });
+function buildInputOutputColumn(kind, cx) {
+  const group = svgEl("g", { id: `${kind}Column` });
   svg.appendChild(group);
 
   LETTERS.forEach((letter, i) => {
-    const y = 90 + i * 22;
+    const y = 130 + i * 22;
 
     const circle = svgEl("circle", {
       cx,
       cy: y,
       r: 10,
-      class: "letter-circle"
+      class: "io-letter"
     });
 
     const text = svgEl("text", {
       x: cx,
       y: y + 1,
-      class: "letter-text"
+      class: "io-text"
     });
 
     text.textContent = letter;
@@ -162,38 +169,91 @@ function buildInputOutputAlphabet(kind, cx) {
     group.appendChild(circle);
     group.appendChild(text);
 
-    if (kind === "input") inputLetters[letter] = { circle, text, x: cx, y };
-    else outputLetters[letter] = { circle, text, x: cx, y };
+    ioLetters[kind][letter] = {
+      circle,
+      text,
+      x: cx,
+      y
+    };
   });
 }
 
-function buildRotor(key, label, rotorName, cx) {
-  const group = svgEl("g", { id: `${key}RotorWrap` });
-  svg.appendChild(group);
+function buildRotorVisual(key, label, rotorName, cx) {
+  const outerGroup = svgEl("g", { id: `${key}Rotor` });
+  svg.appendChild(outerGroup);
 
   const title = svgEl("text", {
     x: cx,
-    y: 145,
+    y: 130,
     class: "rotor-label"
   });
   title.textContent = label;
-  group.appendChild(title);
+  outerGroup.appendChild(title);
 
-  const rotorGroup = svgEl("g", {
-    id: `${key}RotorGroup`,
-    class: "rotor-group"
-  });
-
-  group.appendChild(rotorGroup);
-
-  rotorGroup.appendChild(svgEl("circle", {
+  outerGroup.appendChild(svgEl("circle", {
     cx,
     cy: CY,
-    r: LETTER_R + 19,
+    r: LETTER_R + 18,
     class: "outer-ring"
   }));
 
-  rotorGroup.appendChild(svgEl("circle", {
+  const radialMap = {};
+  const letterMap = {};
+  const socketMap = {};
+  const wireMap = {};
+
+  LETTERS.forEach((letter, i) => {
+    const angle = angleOf(i);
+
+    const letterPos = polar(cx, CY, LETTER_R, angle);
+    const letterEdge = polar(cx, CY, LETTER_R - LETTER_CIRCLE_R + 2, angle);
+    const rotorEdge = polar(cx, CY, ROTOR_R, angle);
+
+    const radial = svgEl("line", {
+      x1: letterEdge.x,
+      y1: letterEdge.y,
+      x2: rotorEdge.x,
+      y2: rotorEdge.y,
+      class: "radial-wire",
+      "data-letter": letter
+    });
+
+    outerGroup.appendChild(radial);
+    radialMap[letter] = radial;
+
+    const letterCircle = svgEl("circle", {
+      cx: letterPos.x,
+      cy: letterPos.y,
+      r: LETTER_CIRCLE_R,
+      class: "letter-circle",
+      "data-letter": letter
+    });
+
+    const letterText = svgEl("text", {
+      x: letterPos.x,
+      y: letterPos.y + 1,
+      class: "letter-text",
+      "data-letter": letter
+    });
+    letterText.textContent = letter;
+
+    outerGroup.appendChild(letterCircle);
+    outerGroup.appendChild(letterText);
+
+    letterMap[letter] = {
+      circle: letterCircle,
+      text: letterText
+    };
+  });
+
+  const innerGroup = svgEl("g", {
+    id: `${key}RotorInner`,
+    class: "rotor-inner"
+  });
+
+  outerGroup.appendChild(innerGroup);
+
+  innerGroup.appendChild(svgEl("circle", {
     cx,
     cy: CY,
     r: ROTOR_R,
@@ -203,90 +263,91 @@ function buildRotor(key, label, rotorName, cx) {
   const wiring = ROTORS[rotorName].wiring;
 
   LETTERS.forEach((letter, i) => {
-    const outer = polar(cx, CY, LETTER_R, angleOf(i));
-    const socket = polar(cx, CY, SOCKET_R, angleOf(i));
-    const mapped = indexOf(wiring[i]);
-    const inner = polar(cx, CY, 56 + (i % 5) * 6, angleOf(mapped));
+    const outLetter = wiring[i];
 
-    const radial = svgEl("line", {
-      x1: outer.x,
-      y1: outer.y,
-      x2: socket.x,
-      y2: socket.y,
-      class: "wire"
-    });
+    const start = polar(cx, CY, SOCKET_R, angleOf(i));
+    const end = polar(cx, CY, SOCKET_R, angleOf(indexOf(outLetter)));
 
-    rotorGroup.appendChild(radial);
+    const layer = i % 5;
+    const r1 = INNER_WIRE_R - layer * 5;
+    const r2 = INNER_WIRE_R - ((layer + 2) % 5) * 5;
 
-    const bend = {
-      x: inner.x,
-      y: socket.y
-    };
+    const p1 = polar(cx, CY, r1, angleOf(i));
+    const p2 = polar(cx, CY, r2, angleOf(indexOf(outLetter)));
+    const bend = orthogonalBend(p1, p2, cx, CY);
 
     const path = svgEl("path", {
-      d: `M ${socket.x} ${socket.y} L ${bend.x} ${bend.y} L ${inner.x} ${inner.y}`,
-      class: "wire"
+      d: [
+        `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
+        `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+        `L ${bend.x.toFixed(1)} ${bend.y.toFixed(1)}`,
+        `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
+        `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
+      ].join(" "),
+      class: "wire",
+      "data-in": letter,
+      "data-out": outLetter
     });
 
-    rotorGroup.appendChild(path);
+    innerGroup.appendChild(path);
+    wireMap[`${letter}-${outLetter}`] = path;
+    wireMap[`${outLetter}-${letter}`] = path;
 
-    const socketCircle = svgEl("circle", {
-      cx: socket.x,
-      cy: socket.y,
-      r: 4.5,
+    const socketIn = svgEl("circle", {
+      cx: start.x,
+      cy: start.y,
+      r: 4.8,
       class: "socket",
       "data-letter": letter
     });
 
-    rotorGroup.appendChild(socketCircle);
-
-    const letterCircle = svgEl("circle", {
-      cx: outer.x,
-      cy: outer.y,
-      r: LETTER_CIRCLE_R,
-      class: "letter-circle",
-      "data-letter": letter
+    const socketOut = svgEl("circle", {
+      cx: end.x,
+      cy: end.y,
+      r: 4.8,
+      class: "socket",
+      "data-letter": outLetter
     });
 
-    const letterText = svgEl("text", {
-      x: outer.x,
-      y: outer.y + 1,
-      class: "letter-text",
-      "data-letter": letter
-    });
-    letterText.textContent = letter;
+    innerGroup.appendChild(socketIn);
+    innerGroup.appendChild(socketOut);
 
-    rotorGroup.appendChild(letterCircle);
-    rotorGroup.appendChild(letterText);
+    socketMap[letter] = socketMap[letter] || [];
+    socketMap[outLetter] = socketMap[outLetter] || [];
+    socketMap[letter].push(socketIn);
+    socketMap[outLetter].push(socketOut);
   });
 
-  rotorGroup.appendChild(svgEl("circle", {
+  innerGroup.appendChild(svgEl("circle", {
     cx,
     cy: CY,
-    r: INNER_R,
+    r: INNER_HOLE_R,
     class: "inner-hole"
   }));
 
-  rotorGroup.appendChild(svgEl("circle", {
+  innerGroup.appendChild(svgEl("circle", {
     cx,
     cy: CY,
     r: 22,
     class: "center-dot"
   }));
 
-  const posText = svgEl("text", {
+  const positionText = svgEl("text", {
     x: cx,
     y: CY,
-    class: "rotor-position",
-    id: `${key}RotorPosition`
+    class: "rotor-position"
   });
-  posText.textContent = "A";
-  group.appendChild(posText);
+  positionText.textContent = "A";
+  outerGroup.appendChild(positionText);
 
   rotorVisuals[key] = {
-    group: rotorGroup,
-    positionText: posText,
-    cx
+    cx,
+    innerGroup,
+    positionText,
+    radialMap,
+    letterMap,
+    socketMap,
+    wireMap
   };
 }
 
@@ -295,26 +356,34 @@ function buildReflector() {
   svg.appendChild(group);
 
   reflectorNode = svgEl("rect", {
-    x: CX.reflector - 58,
-    y: CY - 135,
-    width: 116,
-    height: 270,
-    rx: 34,
+    x: X.reflector - 65,
+    y: CY - 130,
+    width: 130,
+    height: 260,
+    rx: 36,
     class: "reflector"
   });
 
-  const text = svgEl("text", {
-    x: CX.reflector,
-    y: CY,
+  const text1 = svgEl("text", {
+    x: X.reflector,
+    y: CY - 14,
     class: "reflector-text"
   });
-  text.textContent = "UKW B";
+  text1.textContent = "Umkehr-";
+
+  const text2 = svgEl("text", {
+    x: X.reflector,
+    y: CY + 18,
+    class: "reflector-text"
+  });
+  text2.textContent = "walze B";
 
   group.appendChild(reflectorNode);
-  group.appendChild(text);
+  group.appendChild(text1);
+  group.appendChild(text2);
 }
 
-function buildMachineLines() {
+function buildBridgeLines() {
   const names = [
     "inputToRight",
     "rightToMiddle",
@@ -327,23 +396,43 @@ function buildMachineLines() {
   ];
 
   names.forEach(name => {
-    const path = svgEl("path", {
+    const line = svgEl("path", {
       d: "",
-      class: "path-line",
+      class: "bridge-line",
       id: name
     });
-    svg.insertBefore(path, svg.firstChild);
-    pathLines[name] = path;
+
+    svg.insertBefore(line, svg.firstChild);
+    bridgeLines[name] = line;
   });
 }
 
-function linePath(x1, y1, x2, y2, offset = 0) {
-  const midX = (x1 + x2) / 2;
-  return `M ${x1} ${y1} C ${midX} ${y1 + offset}, ${midX} ${y2 + offset}, ${x2} ${y2}`;
+function orthogonalBend(p1, p2, cx, cy) {
+  const horizontalFirst = Math.abs(p1.x - cx) > Math.abs(p1.y - cy);
+
+  if (horizontalFirst) {
+    return { x: p2.x, y: p1.y };
+  }
+
+  return { x: p1.x, y: p2.y };
 }
 
-function setPath(name, x1, y1, x2, y2, offset = 0) {
-  pathLines[name].setAttribute("d", linePath(x1, y1, x2, y2, offset));
+function setRotorRotation(key, position, animated = true) {
+  const visual = rotorVisuals[key];
+  const degrees = position * (360 / 26);
+
+  if (!animated) {
+    visual.innerGroup.style.transition = "none";
+    visual.innerGroup.style.transform = `rotate(${degrees}deg)`;
+
+    requestAnimationFrame(() => {
+      visual.innerGroup.style.transition = "";
+    });
+
+    return;
+  }
+
+  visual.innerGroup.style.transform = `rotate(${degrees}deg)`;
 }
 
 function updateRotorVisuals(animated = true) {
@@ -358,23 +447,6 @@ function updateRotorVisuals(animated = true) {
   rotorVisuals.left.positionText.textContent = letterAt(leftPos);
   rotorVisuals.middle.positionText.textContent = letterAt(middlePos);
   rotorVisuals.right.positionText.textContent = letterAt(rightPos);
-}
-
-function setRotorRotation(key, position, animated = true) {
-  const group = rotorVisuals[key].group;
-  const degrees = position * (360 / 26);
-
-  if (!animated) {
-    group.style.transition = "none";
-    group.style.transform = `rotate(${degrees}deg)`;
-
-    requestAnimationFrame(() => {
-      group.style.transition = "";
-    });
-    return;
-  }
-
-  group.style.transform = `rotate(${degrees}deg)`;
 }
 
 function setStartPositions() {
@@ -412,17 +484,34 @@ function stepRotors() {
 
 function rotorForward(letterIndex, wiring, position) {
   const shifted = (letterIndex + position) % 26;
-  const wiredLetter = wiring[shifted];
-  return (indexOf(wiredLetter) - position + 26) % 26;
+  const outputLetter = wiring[shifted];
+  const outputIndex = (indexOf(outputLetter) - position + 26) % 26;
+
+  return {
+    outputIndex,
+    rotorInput: letterAt(shifted),
+    rotorOutput: outputLetter,
+    screenInput: letterAt(letterIndex),
+    screenOutput: letterAt(outputIndex)
+  };
 }
 
 function rotorBackward(letterIndex, wiring, position) {
   const shifted = (letterIndex + position) % 26;
-  const inputIndex = wiring.indexOf(letterAt(shifted));
-  return (inputIndex - position + 26) % 26;
+  const shiftedLetter = letterAt(shifted);
+  const rotorInputIndex = wiring.indexOf(shiftedLetter);
+  const outputIndex = (rotorInputIndex - position + 26) % 26;
+
+  return {
+    outputIndex,
+    rotorInput: shiftedLetter,
+    rotorOutput: letterAt(rotorInputIndex),
+    screenInput: letterAt(letterIndex),
+    screenOutput: letterAt(outputIndex)
+  };
 }
 
-function reflector(letterIndex) {
+function reflect(letterIndex) {
   return indexOf(REFLECTOR_B[letterIndex]);
 }
 
@@ -430,99 +519,173 @@ function traceEnigma(letter) {
   const trace = [];
   let i = indexOf(letter);
 
-  trace.push({ stage: "input", index: i });
+  trace.push({ stage: "input", index: i, letter });
 
-  i = rotorForward(i, ROTORS.III.wiring, rightPos);
-  trace.push({ stage: "right", index: i });
+  let r = rotorForward(i, ROTORS.III.wiring, rightPos);
+  trace.push({ stage: "right", direction: "forward", ...r });
+  i = r.outputIndex;
 
-  i = rotorForward(i, ROTORS.II.wiring, middlePos);
-  trace.push({ stage: "middle", index: i });
+  r = rotorForward(i, ROTORS.II.wiring, middlePos);
+  trace.push({ stage: "middle", direction: "forward", ...r });
+  i = r.outputIndex;
 
-  i = rotorForward(i, ROTORS.I.wiring, leftPos);
-  trace.push({ stage: "left", index: i });
+  r = rotorForward(i, ROTORS.I.wiring, leftPos);
+  trace.push({ stage: "left", direction: "forward", ...r });
+  i = r.outputIndex;
 
-  i = reflector(i);
-  trace.push({ stage: "reflector", index: i });
+  const reflected = reflect(i);
+  trace.push({
+    stage: "reflector",
+    indexIn: i,
+    indexOut: reflected,
+    letterIn: letterAt(i),
+    letterOut: letterAt(reflected)
+  });
+  i = reflected;
 
-  i = rotorBackward(i, ROTORS.I.wiring, leftPos);
-  trace.push({ stage: "leftBack", index: i });
+  r = rotorBackward(i, ROTORS.I.wiring, leftPos);
+  trace.push({ stage: "left", direction: "backward", ...r });
+  i = r.outputIndex;
 
-  i = rotorBackward(i, ROTORS.II.wiring, middlePos);
-  trace.push({ stage: "middleBack", index: i });
+  r = rotorBackward(i, ROTORS.II.wiring, middlePos);
+  trace.push({ stage: "middle", direction: "backward", ...r });
+  i = r.outputIndex;
 
-  i = rotorBackward(i, ROTORS.III.wiring, rightPos);
-  trace.push({ stage: "rightBack", index: i });
+  r = rotorBackward(i, ROTORS.III.wiring, rightPos);
+  trace.push({ stage: "right", direction: "backward", ...r });
+  i = r.outputIndex;
 
-  trace.push({ stage: "output", index: i });
+  trace.push({ stage: "output", index: i, letter: letterAt(i) });
 
   return trace;
 }
 
-function getStagePoint(stage, index) {
-  const y = 90 + index * 22;
+function getColumnPoint(kind, index) {
+  const item = ioLetters[kind][letterAt(index)];
+  return { x: item.x, y: item.y };
+}
 
-  if (stage === "input") return { x: CX.input, y };
-  if (stage === "output") return { x: CX.output, y };
+function getRotorPoint(key, screenLetter) {
+  return polar(rotorVisuals[key].cx, CY, ROTOR_R, angleOf(indexOf(screenLetter)));
+}
 
-  if (stage === "right") return polar(CX.right, CY, SOCKET_R, angleOf(index));
-  if (stage === "middle") return polar(CX.middle, CY, SOCKET_R, angleOf(index));
-  if (stage === "left") return polar(CX.left, CY, SOCKET_R, angleOf(index));
-  if (stage === "reflector") return { x: CX.reflector, y };
+function getReflectorPoint(index) {
+  return {
+    x: X.reflector,
+    y: 130 + index * 22
+  };
+}
 
-  if (stage === "leftBack") return polar(CX.left, CY, SOCKET_R, angleOf(index));
-  if (stage === "middleBack") return polar(CX.middle, CY, SOCKET_R, angleOf(index));
-  if (stage === "rightBack") return polar(CX.right, CY, SOCKET_R, angleOf(index));
+function curvePath(a, b, offset = 0) {
+  const midX = (a.x + b.x) / 2;
+  return `M ${a.x} ${a.y} C ${midX} ${a.y + offset}, ${midX} ${b.y + offset}, ${b.x} ${b.y}`;
+}
 
-  return { x: 0, y: 0 };
+function setBridge(name, a, b, offset = 0) {
+  bridgeLines[name].setAttribute("d", curvePath(a, b, offset));
+}
+
+function updateBridgeVisuals(trace) {
+  const pInput = getColumnPoint("input", trace[0].index);
+  const pRightIn = getRotorPoint("right", trace[1].screenInput);
+  const pRightOut = getRotorPoint("right", trace[1].screenOutput);
+  const pMiddleIn = getRotorPoint("middle", trace[2].screenInput);
+  const pMiddleOut = getRotorPoint("middle", trace[2].screenOutput);
+  const pLeftIn = getRotorPoint("left", trace[3].screenInput);
+  const pLeftOut = getRotorPoint("left", trace[3].screenOutput);
+
+  const pReflectIn = getReflectorPoint(trace[4].indexIn);
+  const pReflectOut = getReflectorPoint(trace[4].indexOut);
+
+  const pLeftBackIn = getRotorPoint("left", trace[5].screenInput);
+  const pLeftBackOut = getRotorPoint("left", trace[5].screenOutput);
+  const pMiddleBackIn = getRotorPoint("middle", trace[6].screenInput);
+  const pMiddleBackOut = getRotorPoint("middle", trace[6].screenOutput);
+  const pRightBackIn = getRotorPoint("right", trace[7].screenInput);
+  const pRightBackOut = getRotorPoint("right", trace[7].screenOutput);
+
+  const pOutput = getColumnPoint("output", trace[8].index);
+
+  setBridge("inputToRight", pInput, pRightIn, -25);
+  setBridge("rightToMiddle", pRightOut, pMiddleIn, -30);
+  setBridge("middleToLeft", pMiddleOut, pLeftIn, -30);
+  setBridge("leftToReflector", pLeftOut, pReflectIn, -30);
+
+  setBridge("reflectorToLeft", pReflectOut, pLeftBackIn, 30);
+  setBridge("leftToMiddleBack", pLeftBackOut, pMiddleBackIn, 30);
+  setBridge("middleToRightBack", pMiddleBackOut, pRightBackIn, 30);
+  setBridge("rightToOutput", pRightBackOut, pOutput, 25);
 }
 
 function clearHighlights() {
-  Object.values(pathLines).forEach(line => line.classList.remove("active"));
+  Object.values(bridgeLines).forEach(line => line.classList.remove("active"));
 
-  Object.values(inputLetters).forEach(item => {
+  Object.values(ioLetters.input).forEach(item => {
     item.circle.classList.remove("active-in", "active-out");
     item.text.classList.remove("dark");
   });
 
-  Object.values(outputLetters).forEach(item => {
+  Object.values(ioLetters.output).forEach(item => {
     item.circle.classList.remove("active-in", "active-out");
     item.text.classList.remove("dark");
   });
 
-  document.querySelectorAll(".socket").forEach(node => node.classList.remove("active"));
-  document.querySelectorAll(".wire").forEach(node => node.classList.remove("active"));
+  Object.values(rotorVisuals).forEach(visual => {
+    Object.values(visual.radialMap).forEach(node => node.classList.remove("active"));
+
+    Object.values(visual.letterMap).forEach(item => {
+      item.circle.classList.remove("active-in", "active-out");
+      item.text.classList.remove("dark");
+    });
+
+    Object.values(visual.socketMap).flat().forEach(node => node.classList.remove("active"));
+    Object.values(visual.wireMap).forEach(node => node.classList.remove("active"));
+  });
 
   if (reflectorNode) reflectorNode.classList.remove("active");
 }
 
-function highlightLetter(collection, letter, className) {
-  const item = collection[letter];
+function highlightColumn(kind, letter, className) {
+  const item = ioLetters[kind][letter];
   if (!item) return;
 
   item.circle.classList.add(className);
   item.text.classList.add("dark");
 }
 
-function updatePathVisuals(trace) {
-  const p0 = getStagePoint("input", trace[0].index);
-  const p1 = getStagePoint("right", trace[1].index);
-  const p2 = getStagePoint("middle", trace[2].index);
-  const p3 = getStagePoint("left", trace[3].index);
-  const p4 = getStagePoint("reflector", trace[4].index);
-  const p5 = getStagePoint("leftBack", trace[5].index);
-  const p6 = getStagePoint("middleBack", trace[6].index);
-  const p7 = getStagePoint("rightBack", trace[7].index);
-  const p8 = getStagePoint("output", trace[8].index);
+function highlightRotorStep(key, step) {
+  const visual = rotorVisuals[key];
 
-  setPath("inputToRight", p0.x, p0.y, p1.x, p1.y, -20);
-  setPath("rightToMiddle", p1.x, p1.y, p2.x, p2.y, -30);
-  setPath("middleToLeft", p2.x, p2.y, p3.x, p3.y, -30);
-  setPath("leftToReflector", p3.x, p3.y, p4.x, p4.y, -30);
+  const inLetter = step.screenInput;
+  const outLetter = step.screenOutput;
 
-  setPath("reflectorToLeft", p4.x, p4.y, p5.x, p5.y, 30);
-  setPath("leftToMiddleBack", p5.x, p5.y, p6.x, p6.y, 30);
-  setPath("middleToRightBack", p6.x, p6.y, p7.x, p7.y, 30);
-  setPath("rightToOutput", p7.x, p7.y, p8.x, p8.y, 20);
+  const rotorIn = step.rotorInput;
+  const rotorOut = step.rotorOutput;
+
+  if (visual.radialMap[inLetter]) visual.radialMap[inLetter].classList.add("active");
+  if (visual.radialMap[outLetter]) visual.radialMap[outLetter].classList.add("active");
+
+  if (visual.letterMap[inLetter]) {
+    visual.letterMap[inLetter].circle.classList.add("active-in");
+    visual.letterMap[inLetter].text.classList.add("dark");
+  }
+
+  if (visual.letterMap[outLetter]) {
+    visual.letterMap[outLetter].circle.classList.add("active-out");
+    visual.letterMap[outLetter].text.classList.add("dark");
+  }
+
+  const wire = visual.wireMap[`${rotorIn}-${rotorOut}`];
+
+  if (wire) wire.classList.add("active");
+
+  if (visual.socketMap[rotorIn]) {
+    visual.socketMap[rotorIn].forEach(socket => socket.classList.add("active"));
+  }
+
+  if (visual.socketMap[rotorOut]) {
+    visual.socketMap[rotorOut].forEach(socket => socket.classList.add("active"));
+  }
 }
 
 function prepareRun() {
@@ -536,15 +699,21 @@ function prepareRun() {
   setStartPositions();
   clearHighlights();
 
-  if (mode === "encrypt") cipherText.value = "";
-  else plainText.value = "";
+  if (mode === "encrypt") {
+    cipherText.value = "";
+  } else {
+    plainText.value = "";
+  }
 
   stepState.textContent = "bereit";
 }
 
 function writeOutput() {
-  if (mode === "encrypt") cipherText.value = outputText;
-  else plainText.value = outputText;
+  if (mode === "encrypt") {
+    cipherText.value = outputText;
+  } else {
+    plainText.value = outputText;
+  }
 }
 
 async function processOneCharacter() {
@@ -567,40 +736,62 @@ async function processOneCharacter() {
   }
 
   playClick();
-
   stepRotors();
 
   await wait(phaseDuration());
 
   const trace = traceEnigma(char);
-  const outputLetter = letterAt(trace[8].index);
+  const outputLetter = trace[8].letter;
 
-  updatePathVisuals(trace);
-  highlightLetter(inputLetters, char, "active-in");
+  updateBridgeVisuals(trace);
+
+  highlightColumn("input", char, "active-in");
   stepState.textContent = `${char} → ?`;
 
-  const pathOrder = [
-    "inputToRight",
-    "rightToMiddle",
-    "middleToLeft",
-    "leftToReflector",
-    "reflectorToLeft",
-    "leftToMiddleBack",
-    "middleToRightBack",
-    "rightToOutput"
-  ];
+  bridgeLines.inputToRight.classList.add("active");
+  await wait(phaseDuration());
 
-  for (const path of pathOrder) {
-    pathLines[path].classList.add("active");
+  highlightRotorStep("right", trace[1]);
+  await wait(phaseDuration());
 
-    if (path === "leftToReflector") {
-      reflectorNode.classList.add("active");
-    }
+  bridgeLines.rightToMiddle.classList.add("active");
+  await wait(phaseDuration());
 
-    await wait(phaseDuration() / 1.8);
-  }
+  highlightRotorStep("middle", trace[2]);
+  await wait(phaseDuration());
 
-  highlightLetter(outputLetters, outputLetter, "active-out");
+  bridgeLines.middleToLeft.classList.add("active");
+  await wait(phaseDuration());
+
+  highlightRotorStep("left", trace[3]);
+  await wait(phaseDuration());
+
+  bridgeLines.leftToReflector.classList.add("active");
+  reflectorNode.classList.add("active");
+  await wait(phaseDuration());
+
+  bridgeLines.reflectorToLeft.classList.add("active");
+  await wait(phaseDuration());
+
+  highlightRotorStep("left", trace[5]);
+  await wait(phaseDuration());
+
+  bridgeLines.leftToMiddleBack.classList.add("active");
+  await wait(phaseDuration());
+
+  highlightRotorStep("middle", trace[6]);
+  await wait(phaseDuration());
+
+  bridgeLines.middleToRightBack.classList.add("active");
+  await wait(phaseDuration());
+
+  highlightRotorStep("right", trace[7]);
+  await wait(phaseDuration());
+
+  bridgeLines.rightToOutput.classList.add("active");
+  await wait(phaseDuration());
+
+  highlightColumn("output", outputLetter, "active-out");
 
   outputText += outputLetter;
   writeOutput();
