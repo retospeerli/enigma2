@@ -4,15 +4,18 @@ const LETTERS = ALPHABET.split("");
 const ROTORS = {
   I: {
     wiring: "EKMFLGDQVZNTOWYHXUSPAIBRCJ",
-    notch: "Q"
+    notch: "Q",
+    style: 1
   },
   II: {
     wiring: "AJDKSIRUXBLHWTMCQGZNPYFVOE",
-    notch: "E"
+    notch: "E",
+    style: 2
   },
   III: {
     wiring: "BDFHJLCPRTXVZNYEIWGAKMUSQO",
-    notch: "V"
+    notch: "V",
+    style: 3
   }
 };
 
@@ -73,7 +76,6 @@ const LETTER_R = 158;
 const LETTER_CIRCLE_R = 14;
 const SOCKET_R = 116;
 const INNER_HOLE_R = 42;
-const INNER_WIRE_BASE_R = 88;
 
 function indexOf(letter) {
   return ALPHABET.indexOf(letter);
@@ -167,21 +169,56 @@ function buildAlphabetColumn() {
   });
 }
 
-function buildWirePathAroundCenter(cx, start, end, index) {
-  const laneOffset = 62 + (index % 4) * 12;
-  const useTopLane = index % 2 === 0;
-  const laneY = CY + (useTopLane ? -laneOffset : laneOffset);
-  const midX = (start.x + end.x) / 2;
+function circularDelta(a, b) {
+  let d = b - a;
 
-  const bend1 = { x: start.x, y: laneY };
-  const bend2 = { x: midX, y: laneY };
-  const bend3 = { x: midX, y: end.y };
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+
+  return d;
+}
+
+/*
+  Zeichnet eine Verbindung innerhalb des Rotors.
+  Wichtig:
+  - bleibt innerhalb des Rotorkreises
+  - geht nicht durch die Mitte
+  - höchstens 4 Knickpunkte
+  - verschiedene Rotoren bekommen unterschiedliche Bahn-Radien
+*/
+function buildWirePathInsideRotor(cx, startIndex, endIndex, styleSeed) {
+  const startAngle = angleOf(startIndex);
+  const endAngle = angleOf(endIndex);
+
+  const delta = circularDelta(startAngle, endAngle);
+  const direction = delta >= 0 ? 1 : -1;
+  const distance = Math.abs(delta);
+
+  const styleRadii = {
+    1: [96, 78, 90, 72],
+    2: [88, 66, 100, 74],
+    3: [102, 84, 68, 92],
+    4: [92, 70, 104, 80]
+  };
+
+  const radii = styleRadii[styleSeed] || styleRadii[1];
+
+  const start = polar(cx, CY, SOCKET_R, startAngle);
+  const end = polar(cx, CY, SOCKET_R, endAngle);
+
+  const a1 = startAngle + direction * Math.min(28, distance * 0.25 + 10);
+  const a2 = startAngle + delta * 0.5;
+  const a3 = endAngle - direction * Math.min(28, distance * 0.25 + 10);
+
+  const p1 = polar(cx, CY, radii[startIndex % 4], a1);
+  const p2 = polar(cx, CY, radii[(startIndex + endIndex) % 4], a2);
+  const p3 = polar(cx, CY, radii[endIndex % 4], a3);
 
   return [
     `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
-    `L ${bend1.x.toFixed(1)} ${bend1.y.toFixed(1)}`,
-    `L ${bend2.x.toFixed(1)} ${bend2.y.toFixed(1)}`,
-    `L ${bend3.x.toFixed(1)} ${bend3.y.toFixed(1)}`,
+    `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
+    `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
+    `L ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`,
     `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
   ].join(" ");
 }
@@ -262,17 +299,16 @@ function buildRotorVisual(key, label, rotorName, cx) {
   }));
 
   const wiring = ROTORS[rotorName].wiring;
+  const styleSeed = ROTORS[rotorName].style;
   const wireMap = {};
   const socketMap = {};
 
   LETTERS.forEach((letter, i) => {
     const outLetter = wiring[i];
-
-    const start = polar(cx, CY, SOCKET_R, angleOf(i));
-    const end = polar(cx, CY, SOCKET_R, angleOf(indexOf(outLetter)));
+    const outIndex = indexOf(outLetter);
 
     const path = svgEl("path", {
-      d: buildWirePathAroundCenter(cx, start, end, i),
+      d: buildWirePathInsideRotor(cx, i, outIndex, styleSeed),
       class: "wire"
     });
 
@@ -280,6 +316,9 @@ function buildRotorVisual(key, label, rotorName, cx) {
 
     wireMap[`${letter}-${outLetter}`] = path;
     wireMap[`${outLetter}-${letter}`] = path;
+
+    const start = polar(cx, CY, SOCKET_R, angleOf(i));
+    const end = polar(cx, CY, SOCKET_R, angleOf(outIndex));
 
     const socketIn = svgEl("circle", {
       cx: start.x,
@@ -423,15 +462,13 @@ function buildReflectorVisual() {
     if (used.has(letter)) return;
 
     const outLetter = REFLECTOR_B[i];
+    const outIndex = indexOf(outLetter);
 
     used.add(letter);
     used.add(outLetter);
 
-    const start = polar(cx, CY, SOCKET_R, angleOf(i));
-    const end = polar(cx, CY, SOCKET_R, angleOf(indexOf(outLetter)));
-
     const path = svgEl("path", {
-      d: buildWirePathAroundCenter(cx, start, end, i),
+      d: buildWirePathInsideRotor(cx, i, outIndex, 4),
       class: "reflector-wire"
     });
 
@@ -486,6 +523,7 @@ function buildBridgeLines() {
 
 function setRotorRotation(key, position, animated = true) {
   const visual = rotorVisuals[key];
+
   const degrees = -position * (360 / 26);
 
   if (!animated) {
