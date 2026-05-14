@@ -62,10 +62,10 @@ const CY = 330;
 
 const X = {
   alphabet: 90,
-  right: 450,
-  middle: 780,
-  left: 1110,
-  reflector: 1480
+  right: 520,
+  middle: 900,
+  left: 1280,
+  reflector: 1660
 };
 
 const ROTOR_R = 118;
@@ -167,6 +167,25 @@ function buildAlphabetColumn() {
   });
 }
 
+function buildWirePathAroundCenter(cx, start, end, index) {
+  const laneOffset = 62 + (index % 4) * 12;
+  const useTopLane = index % 2 === 0;
+  const laneY = CY + (useTopLane ? -laneOffset : laneOffset);
+  const midX = (start.x + end.x) / 2;
+
+  const bend1 = { x: start.x, y: laneY };
+  const bend2 = { x: midX, y: laneY };
+  const bend3 = { x: midX, y: end.y };
+
+  return [
+    `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
+    `L ${bend1.x.toFixed(1)} ${bend1.y.toFixed(1)}`,
+    `L ${bend2.x.toFixed(1)} ${bend2.y.toFixed(1)}`,
+    `L ${bend3.x.toFixed(1)} ${bend3.y.toFixed(1)}`,
+    `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
+  ].join(" ");
+}
+
 function buildRotorVisual(key, label, rotorName, cx) {
   const outerGroup = svgEl("g", { id: `${key}Rotor` });
   svg.appendChild(outerGroup);
@@ -252,22 +271,8 @@ function buildRotorVisual(key, label, rotorName, cx) {
     const start = polar(cx, CY, SOCKET_R, angleOf(i));
     const end = polar(cx, CY, SOCKET_R, angleOf(indexOf(outLetter)));
 
-    const layer = i % 5;
-    const r1 = INNER_WIRE_BASE_R - layer * 8;
-    const r2 = INNER_WIRE_BASE_R - ((layer + 2) % 5) * 8;
-
-    const p1 = polar(cx, CY, r1, angleOf(i));
-    const p2 = polar(cx, CY, r2, angleOf(indexOf(outLetter)));
-    const bend = orthogonalBend(p1, p2, cx, CY);
-
     const path = svgEl("path", {
-      d: [
-        `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
-        `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
-        `L ${bend.x.toFixed(1)} ${bend.y.toFixed(1)}`,
-        `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
-        `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
-      ].join(" "),
+      d: buildWirePathAroundCenter(cx, start, end, i),
       class: "wire"
     });
 
@@ -425,22 +430,8 @@ function buildReflectorVisual() {
     const start = polar(cx, CY, SOCKET_R, angleOf(i));
     const end = polar(cx, CY, SOCKET_R, angleOf(indexOf(outLetter)));
 
-    const layer = i % 5;
-    const r1 = INNER_WIRE_BASE_R - layer * 8;
-    const r2 = INNER_WIRE_BASE_R - ((layer + 2) % 5) * 8;
-
-    const p1 = polar(cx, CY, r1, angleOf(i));
-    const p2 = polar(cx, CY, r2, angleOf(indexOf(outLetter)));
-    const bend = orthogonalBend(p1, p2, cx, CY);
-
     const path = svgEl("path", {
-      d: [
-        `M ${start.x.toFixed(1)} ${start.y.toFixed(1)}`,
-        `L ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`,
-        `L ${bend.x.toFixed(1)} ${bend.y.toFixed(1)}`,
-        `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
-        `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
-      ].join(" "),
+      d: buildWirePathAroundCenter(cx, start, end, i),
       class: "reflector-wire"
     });
 
@@ -493,24 +484,8 @@ function buildBridgeLines() {
   });
 }
 
-function orthogonalBend(p1, p2, cx, cy) {
-  const horizontalFirst =
-    Math.abs(p1.x - cx) > Math.abs(p1.y - cy);
-
-  return horizontalFirst
-    ? { x: p2.x, y: p1.y }
-    : { x: p1.x, y: p2.y };
-}
-
 function setRotorRotation(key, position, animated = true) {
   const visual = rotorVisuals[key];
-
-  /*
-    WICHTIG:
-    Die festen Außenbuchstaben bleiben stehen.
-    Die sichtbare innere Walze dreht entgegengesetzt zur logischen Rotorposition,
-    damit die gezeichneten Drahtenden optisch exakt zu den festen Buchstaben zeigen.
-  */
   const degrees = -position * (360 / 26);
 
   if (!animated) {
@@ -714,7 +689,6 @@ function getReflectorPoint(letter) {
 
 function curvePath(a, b, offset = 0) {
   const midX = (a.x + b.x) / 2;
-
   return `M ${a.x} ${a.y} C ${midX} ${a.y + offset}, ${midX} ${b.y + offset}, ${b.x} ${b.y}`;
 }
 
