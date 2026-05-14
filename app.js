@@ -54,19 +54,18 @@ let middlePos = 0;
 let rightPos = 0;
 
 const rotorVisuals = {};
-const ioLetters = { input: {}, output: {} };
+const ioLetters = {};
 const bridgeLines = {};
 const reflectorVisual = {};
 
-const CY = 470;
+const CY = 330;
 
 const X = {
-  input: 85,
-  right: 360,
-  middle: 680,
-  left: 1000,
-  reflector: 1325,
-  output: 1605
+  alphabet: 90,
+  right: 450,
+  middle: 780,
+  left: 1110,
+  reflector: 1480
 };
 
 const ROTOR_R = 118;
@@ -98,9 +97,7 @@ function polar(cx, cy, radius, angleDeg) {
 
 function svgEl(name, attrs = {}) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attrs).forEach(([key, value]) => {
-    el.setAttribute(key, value);
-  });
+  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
   return el;
 }
 
@@ -127,33 +124,31 @@ function buildSvg() {
   svg.innerHTML = "";
 
   buildBridgeLines();
-
-  buildInputOutputColumn("input", X.input);
+  buildAlphabetColumn();
   buildRotorVisual("right", "Rotor III", "III", X.right);
   buildRotorVisual("middle", "Rotor II", "II", X.middle);
   buildRotorVisual("left", "Rotor I", "I", X.left);
   buildReflectorVisual();
-  buildInputOutputColumn("output", X.output);
 
   updateRotorVisuals(false);
 }
 
-function buildInputOutputColumn(kind, cx) {
-  const group = svgEl("g", { id: `${kind}Column` });
+function buildAlphabetColumn() {
+  const group = svgEl("g", { id: "alphabetColumn" });
   svg.appendChild(group);
 
   LETTERS.forEach((letter, i) => {
-    const y = 170 + i * 22;
+    const y = 48 + i * 22;
 
     const circle = svgEl("circle", {
-      cx,
+      cx: X.alphabet,
       cy: y,
       r: 10,
       class: "io-letter"
     });
 
     const text = svgEl("text", {
-      x: cx,
+      x: X.alphabet,
       y: y + 1,
       class: "io-text"
     });
@@ -163,7 +158,7 @@ function buildInputOutputColumn(kind, cx) {
     group.appendChild(circle);
     group.appendChild(text);
 
-    ioLetters[kind][letter] = { circle, text, x: cx, y };
+    ioLetters[letter] = { circle, text, x: X.alphabet, y };
   });
 }
 
@@ -173,7 +168,7 @@ function buildRotorVisual(key, label, rotorName, cx) {
 
   const title = svgEl("text", {
     x: cx,
-    y: 155,
+    y: 58,
     class: "rotor-label"
   });
   title.textContent = label;
@@ -200,8 +195,7 @@ function buildRotorVisual(key, label, rotorName, cx) {
       y1: letterEdge.y,
       x2: rotorEdge.x,
       y2: rotorEdge.y,
-      class: "radial-wire",
-      "data-letter": letter
+      class: "radial-wire"
     });
 
     outerGroup.appendChild(radial);
@@ -211,15 +205,13 @@ function buildRotorVisual(key, label, rotorName, cx) {
       cx: letterPos.x,
       cy: letterPos.y,
       r: LETTER_CIRCLE_R,
-      class: "letter-circle",
-      "data-letter": letter
+      class: "letter-circle"
     });
 
     const text = svgEl("text", {
       x: letterPos.x,
       y: letterPos.y + 1,
-      class: "letter-text",
-      "data-letter": letter
+      class: "letter-text"
     });
 
     text.textContent = letter;
@@ -270,9 +262,7 @@ function buildRotorVisual(key, label, rotorName, cx) {
         `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
         `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
       ].join(" "),
-      class: "wire",
-      "data-in": letter,
-      "data-out": outLetter
+      class: "wire"
     });
 
     innerGroup.appendChild(path);
@@ -284,16 +274,14 @@ function buildRotorVisual(key, label, rotorName, cx) {
       cx: start.x,
       cy: start.y,
       r: 5,
-      class: "socket",
-      "data-letter": letter
+      class: "socket"
     });
 
     const socketOut = svgEl("circle", {
       cx: end.x,
       cy: end.y,
       r: 5,
-      class: "socket",
-      "data-letter": outLetter
+      class: "socket"
     });
 
     innerGroup.appendChild(socketIn);
@@ -356,8 +344,8 @@ function buildReflectorVisual() {
 
   const title = svgEl("text", {
     x: cx,
-    y: 155,
-    class: "rotor-label"
+    y: 58,
+    class: "reflector-label"
   });
   title.textContent = "Umkehrwalze B";
   outerGroup.appendChild(title);
@@ -379,7 +367,6 @@ function buildReflectorVisual() {
   const letterMap = {};
   const socketMap = {};
   const wireMap = {};
-
   const used = new Set();
 
   LETTERS.forEach((letter, i) => {
@@ -391,29 +378,27 @@ function buildReflectorVisual() {
       cx: letterPos.x,
       cy: letterPos.y,
       r: LETTER_CIRCLE_R,
-      class: "reflector-letter",
-      "data-letter": letter
+      class: "reflector-letter"
     });
 
     const text = svgEl("text", {
       x: letterPos.x,
       y: letterPos.y + 1,
-      class: "reflector-letter-text",
-      "data-letter": letter
+      class: "reflector-letter-text"
     });
 
     text.textContent = letter;
 
     outerGroup.appendChild(circle);
     outerGroup.appendChild(text);
+
     letterMap[letter] = { circle, text };
 
     const socketCircle = svgEl("circle", {
       cx: socket.x,
       cy: socket.y,
       r: 5,
-      class: "reflector-socket",
-      "data-letter": letter
+      class: "reflector-socket"
     });
 
     outerGroup.appendChild(socketCircle);
@@ -446,12 +431,11 @@ function buildReflectorVisual() {
         `L ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`,
         `L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`
       ].join(" "),
-      class: "reflector-wire",
-      "data-a": letter,
-      "data-b": outLetter
+      class: "reflector-wire"
     });
 
     outerGroup.appendChild(path);
+
     wireMap[`${letter}-${outLetter}`] = path;
     wireMap[`${outLetter}-${letter}`] = path;
   });
@@ -478,21 +462,20 @@ function buildReflectorVisual() {
 
 function buildBridgeLines() {
   const names = [
-    "inputToRight",
+    "alphabetToRight",
     "rightToMiddle",
     "middleToLeft",
     "leftToReflector",
     "reflectorToLeft",
     "leftToMiddleBack",
     "middleToRightBack",
-    "rightToOutput"
+    "rightToAlphabet"
   ];
 
   names.forEach(name => {
     const line = svgEl("path", {
       d: "",
-      class: "bridge-line",
-      id: name
+      class: "bridge-line"
     });
 
     svg.appendChild(line);
@@ -502,12 +485,7 @@ function buildBridgeLines() {
 
 function orthogonalBend(p1, p2, cx, cy) {
   const horizontalFirst = Math.abs(p1.x - cx) > Math.abs(p1.y - cy);
-
-  if (horizontalFirst) {
-    return { x: p2.x, y: p1.y };
-  }
-
-  return { x: p1.x, y: p2.y };
+  return horizontalFirst ? { x: p2.x, y: p1.y } : { x: p1.x, y: p2.y };
 }
 
 function setRotorRotation(key, position, animated = true) {
@@ -562,13 +540,8 @@ function stepRotors() {
   const middleAtNotch = shouldStepLeft();
   const rightAtNotch = shouldStepMiddle();
 
-  if (middleAtNotch) {
-    leftPos = (leftPos + 1) % 26;
-  }
-
-  if (middleAtNotch || rightAtNotch) {
-    middlePos = (middlePos + 1) % 26;
-  }
+  if (middleAtNotch) leftPos = (leftPos + 1) % 26;
+  if (middleAtNotch || rightAtNotch) middlePos = (middlePos + 1) % 26;
 
   rightPos = (rightPos + 1) % 26;
 
@@ -614,7 +587,7 @@ function traceEnigma(letter) {
   const trace = [];
   let i = indexOf(letter);
 
-  trace.push({ stage: "input", index: i, letter });
+  trace.push({ stage: "alphabetIn", index: i, letter });
 
   let r = rotorForward(i, ROTORS.III.wiring, rightPos);
   trace.push({ stage: "right", direction: "forward", ...r });
@@ -631,12 +604,11 @@ function traceEnigma(letter) {
   const reflected = reflectIndex(i);
   trace.push({
     stage: "reflector",
-    inputIndex: i,
-    outputIndex: reflected,
+    screenInput: letterAt(i),
+    screenOutput: letterAt(reflected),
     rotorInput: letterAt(i),
     rotorOutput: letterAt(reflected),
-    screenInput: letterAt(i),
-    screenOutput: letterAt(reflected)
+    outputIndex: reflected
   });
   i = reflected;
 
@@ -652,13 +624,13 @@ function traceEnigma(letter) {
   trace.push({ stage: "right", direction: "back", ...r });
   i = r.outputIndex;
 
-  trace.push({ stage: "output", index: i, letter: letterAt(i) });
+  trace.push({ stage: "alphabetOut", index: i, letter: letterAt(i) });
 
   return trace;
 }
 
-function getColumnPoint(kind, letter) {
-  const item = ioLetters[kind][letter];
+function getAlphabetPoint(letter) {
+  const item = ioLetters[letter];
   return { x: item.x, y: item.y };
 }
 
@@ -680,74 +652,35 @@ function setBridge(name, a, b, offset = 0) {
 }
 
 function updateBridgeVisuals(trace) {
-  const pInput = getColumnPoint("input", trace[0].letter);
+  setBridge("alphabetToRight", getAlphabetPoint(trace[0].letter), getRotorPoint("right", trace[1].screenInput), -25);
+  setBridge("rightToMiddle", getRotorPoint("right", trace[1].screenOutput), getRotorPoint("middle", trace[2].screenInput), -30);
+  setBridge("middleToLeft", getRotorPoint("middle", trace[2].screenOutput), getRotorPoint("left", trace[3].screenInput), -30);
+  setBridge("leftToReflector", getRotorPoint("left", trace[3].screenOutput), getReflectorPoint(trace[4].screenInput), -30);
 
-  const pRightIn = getRotorPoint("right", trace[1].screenInput);
-  const pRightOut = getRotorPoint("right", trace[1].screenOutput);
-
-  const pMiddleIn = getRotorPoint("middle", trace[2].screenInput);
-  const pMiddleOut = getRotorPoint("middle", trace[2].screenOutput);
-
-  const pLeftIn = getRotorPoint("left", trace[3].screenInput);
-  const pLeftOut = getRotorPoint("left", trace[3].screenOutput);
-
-  const pReflectIn = getReflectorPoint(trace[4].screenInput);
-  const pReflectOut = getReflectorPoint(trace[4].screenOutput);
-
-  const pLeftBackIn = getRotorPoint("left", trace[5].screenInput);
-  const pLeftBackOut = getRotorPoint("left", trace[5].screenOutput);
-
-  const pMiddleBackIn = getRotorPoint("middle", trace[6].screenInput);
-  const pMiddleBackOut = getRotorPoint("middle", trace[6].screenOutput);
-
-  const pRightBackIn = getRotorPoint("right", trace[7].screenInput);
-  const pRightBackOut = getRotorPoint("right", trace[7].screenOutput);
-
-  const pOutput = getColumnPoint("output", trace[8].letter);
-
-  setBridge("inputToRight", pInput, pRightIn, -25);
-  setBridge("rightToMiddle", pRightOut, pMiddleIn, -30);
-  setBridge("middleToLeft", pMiddleOut, pLeftIn, -30);
-  setBridge("leftToReflector", pLeftOut, pReflectIn, -30);
-
-  setBridge("reflectorToLeft", pReflectOut, pLeftBackIn, 30);
-  setBridge("leftToMiddleBack", pLeftBackOut, pMiddleBackIn, 30);
-  setBridge("middleToRightBack", pMiddleBackOut, pRightBackIn, 30);
-  setBridge("rightToOutput", pRightBackOut, pOutput, 25);
+  setBridge("reflectorToLeft", getReflectorPoint(trace[4].screenOutput), getRotorPoint("left", trace[5].screenInput), 30);
+  setBridge("leftToMiddleBack", getRotorPoint("left", trace[5].screenOutput), getRotorPoint("middle", trace[6].screenInput), 30);
+  setBridge("middleToRightBack", getRotorPoint("middle", trace[6].screenOutput), getRotorPoint("right", trace[7].screenInput), 30);
+  setBridge("rightToAlphabet", getRotorPoint("right", trace[7].screenOutput), getAlphabetPoint(trace[8].letter), 25);
 }
 
 function clearHighlights() {
-  Object.values(bridgeLines).forEach(line => {
-    line.classList.remove("active-forward", "active-back");
-  });
+  Object.values(bridgeLines).forEach(line => line.classList.remove("active-forward", "active-back"));
 
-  Object.values(ioLetters.input).forEach(item => {
-    item.circle.classList.remove("active-forward", "active-back");
-    item.text.classList.remove("dark");
-  });
-
-  Object.values(ioLetters.output).forEach(item => {
+  Object.values(ioLetters).forEach(item => {
     item.circle.classList.remove("active-forward", "active-back");
     item.text.classList.remove("dark");
   });
 
   Object.values(rotorVisuals).forEach(visual => {
-    Object.values(visual.radialMap).forEach(node => {
-      node.classList.remove("active-forward", "active-back");
-    });
+    Object.values(visual.radialMap).forEach(node => node.classList.remove("active-forward", "active-back"));
 
     Object.values(visual.letterMap).forEach(item => {
       item.circle.classList.remove("active-forward", "active-back");
       item.text.classList.remove("dark");
     });
 
-    Object.values(visual.socketMap).flat().forEach(node => {
-      node.classList.remove("active-forward", "active-back");
-    });
-
-    Object.values(visual.wireMap).forEach(node => {
-      node.classList.remove("active-forward", "active-back");
-    });
+    Object.values(visual.socketMap).flat().forEach(node => node.classList.remove("active-forward", "active-back"));
+    Object.values(visual.wireMap).forEach(node => node.classList.remove("active-forward", "active-back"));
   });
 
   Object.values(reflectorVisual.letterMap || {}).forEach(item => {
@@ -755,19 +688,12 @@ function clearHighlights() {
     item.text.classList.remove("dark");
   });
 
-  Object.values(reflectorVisual.socketMap || {}).flat().forEach(node => {
-    node.classList.remove("active-forward", "active-back");
-  });
-
-  Object.values(reflectorVisual.wireMap || {}).forEach(node => {
-    node.classList.remove("active-forward", "active-back");
-  });
+  Object.values(reflectorVisual.socketMap || {}).flat().forEach(node => node.classList.remove("active-forward", "active-back"));
+  Object.values(reflectorVisual.wireMap || {}).forEach(node => node.classList.remove("active-forward", "active-back"));
 }
 
-function highlightColumn(kind, letter, direction) {
-  const item = ioLetters[kind][letter];
-  if (!item) return;
-
+function highlightAlphabet(letter, direction) {
+  const item = ioLetters[letter];
   item.circle.classList.add(direction);
   item.text.classList.add("dark");
 }
@@ -777,57 +703,38 @@ function highlightRotorStep(key, step, direction) {
 
   const inLetter = step.screenInput;
   const outLetter = step.screenOutput;
-
   const rotorIn = step.rotorInput;
   const rotorOut = step.rotorOutput;
 
-  if (visual.radialMap[inLetter]) visual.radialMap[inLetter].classList.add(direction);
-  if (visual.radialMap[outLetter]) visual.radialMap[outLetter].classList.add(direction);
+  visual.radialMap[inLetter]?.classList.add(direction);
+  visual.radialMap[outLetter]?.classList.add(direction);
 
-  if (visual.letterMap[inLetter]) {
-    visual.letterMap[inLetter].circle.classList.add(direction);
-    visual.letterMap[inLetter].text.classList.add("dark");
-  }
+  visual.letterMap[inLetter]?.circle.classList.add(direction);
+  visual.letterMap[inLetter]?.text.classList.add("dark");
 
-  if (visual.letterMap[outLetter]) {
-    visual.letterMap[outLetter].circle.classList.add(direction);
-    visual.letterMap[outLetter].text.classList.add("dark");
-  }
+  visual.letterMap[outLetter]?.circle.classList.add(direction);
+  visual.letterMap[outLetter]?.text.classList.add("dark");
 
-  const wire = visual.wireMap[`${rotorIn}-${rotorOut}`];
-  if (wire) wire.classList.add(direction);
+  visual.wireMap[`${rotorIn}-${rotorOut}`]?.classList.add(direction);
 
-  if (visual.socketMap[rotorIn]) {
-    visual.socketMap[rotorIn].forEach(socket => socket.classList.add(direction));
-  }
-
-  if (visual.socketMap[rotorOut]) {
-    visual.socketMap[rotorOut].forEach(socket => socket.classList.add(direction));
-  }
+  visual.socketMap[rotorIn]?.forEach(socket => socket.classList.add(direction));
+  visual.socketMap[rotorOut]?.forEach(socket => socket.classList.add(direction));
 }
 
 function highlightReflector(step) {
   const inLetter = step.screenInput;
   const outLetter = step.screenOutput;
 
-  const wire = reflectorVisual.wireMap[`${inLetter}-${outLetter}`];
-  if (wire) {
-    wire.classList.add("active-forward");
-    wire.classList.add("active-back");
-  }
+  reflectorVisual.wireMap[`${inLetter}-${outLetter}`]?.classList.add("active-forward", "active-back");
 
-  [inLetter, outLetter].forEach((letter, index) => {
-    const direction = index === 0 ? "active-forward" : "active-back";
+  reflectorVisual.letterMap[inLetter]?.circle.classList.add("active-forward");
+  reflectorVisual.letterMap[inLetter]?.text.classList.add("dark");
 
-    if (reflectorVisual.letterMap[letter]) {
-      reflectorVisual.letterMap[letter].circle.classList.add(direction);
-      reflectorVisual.letterMap[letter].text.classList.add("dark");
-    }
+  reflectorVisual.letterMap[outLetter]?.circle.classList.add("active-back");
+  reflectorVisual.letterMap[outLetter]?.text.classList.add("dark");
 
-    if (reflectorVisual.socketMap[letter]) {
-      reflectorVisual.socketMap[letter].forEach(socket => socket.classList.add(direction));
-    }
-  });
+  reflectorVisual.socketMap[inLetter]?.forEach(socket => socket.classList.add("active-forward"));
+  reflectorVisual.socketMap[outLetter]?.forEach(socket => socket.classList.add("active-back"));
 }
 
 function prepareRun() {
@@ -881,10 +788,10 @@ async function processOneCharacter() {
 
   updateBridgeVisuals(trace);
 
-  highlightColumn("input", char, "active-forward");
+  highlightAlphabet(char, "active-forward");
   stepState.textContent = `${char} → ?`;
 
-  bridgeLines.inputToRight.classList.add("active-forward");
+  bridgeLines.alphabetToRight.classList.add("active-forward");
   await wait(phaseDuration());
 
   highlightRotorStep("right", trace[1], "active-forward");
@@ -926,10 +833,10 @@ async function processOneCharacter() {
   highlightRotorStep("right", trace[7], "active-back");
   await wait(phaseDuration());
 
-  bridgeLines.rightToOutput.classList.add("active-back");
+  bridgeLines.rightToAlphabet.classList.add("active-back");
   await wait(phaseDuration());
 
-  highlightColumn("output", outputLetter, "active-back");
+  highlightAlphabet(outputLetter, "active-back");
 
   outputText += outputLetter;
   writeOutput();
