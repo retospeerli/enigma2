@@ -12,7 +12,7 @@
     <header class="top">
       <div>
         <h1>Enigma I</h1>
-        <p>Historische Rotor-Verschlüsselung ohne Steckerbrett</p>
+        <p>Drei Rotoren und Umkehrwalze</p>
       </div>
       <button id="resetBtn" class="small">↻ Zurücksetzen</button>
     </header>
@@ -24,9 +24,7 @@
       <label for="cipherText">Geheimtext</label>
       <textarea id="cipherText" spellcheck="false" placeholder="Hier erscheint der Geheimtext..."></textarea>
 
-      <p class="hint">
-        Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur die Buchstaben A–Z.
-      </p>
+      <p class="hint">Leerzeichen und Satzzeichen bleiben erhalten. Verschlüsselt werden nur Buchstaben A–Z.</p>
     </section>
 
     <section class="box">
@@ -72,25 +70,13 @@
 
   <section class="stage">
     <div class="status">
-      <div>
-        <span>Rotor I</span>
-        <strong id="leftState">A</strong>
-      </div>
-      <div>
-        <span>Rotor II</span>
-        <strong id="middleState">A</strong>
-      </div>
-      <div>
-        <span>Rotor III</span>
-        <strong id="rightState">A</strong>
-      </div>
-      <div>
-        <span>Schritt</span>
-        <strong id="stepState">bereit</strong>
-      </div>
+      <div><span>Rotor I</span><strong id="leftState">A</strong></div>
+      <div><span>Rotor II</span><strong id="middleState">A</strong></div>
+      <div><span>Rotor III</span><strong id="rightState">A</strong></div>
+      <div><span>Schritt</span><strong id="stepState">bereit</strong></div>
     </div>
 
-    <svg id="enigmaSvg" viewBox="0 0 1200 760" aria-label="Enigma I Rotoren"></svg>
+    <svg id="enigmaSvg" viewBox="0 0 1400 820" aria-label="Enigma I"></svg>
   </section>
 </main>
 
