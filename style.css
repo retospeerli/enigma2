@@ -8,6 +8,15 @@
   --back: #62d89a;
   --danger: #ff5e66;
   --purple: #b88df0;
+
+  --transfer1: #ffc247;
+  --transfer2: #7db8ff;
+  --transfer3: #ff8bd1;
+  --transfer4: #c6ff6b;
+  --transfer5: #62d89a;
+  --transfer6: #9b8cff;
+  --transfer7: #ff9b63;
+  --transfer8: #8ff3ff;
 }
 
 * {
@@ -259,6 +268,78 @@ input[type="range"] {
 .reflector-letter.active-back {
   fill: var(--back);
   stroke: #baf5d1;
+}
+
+.letter-circle.transfer-1,
+.io-letter.transfer-1,
+.reflector-letter.transfer-1,
+.socket.transfer-1,
+.reflector-socket.transfer-1 {
+  fill: var(--transfer1);
+  stroke: #fff1bc;
+}
+
+.letter-circle.transfer-2,
+.io-letter.transfer-2,
+.reflector-letter.transfer-2,
+.socket.transfer-2,
+.reflector-socket.transfer-2 {
+  fill: var(--transfer2);
+  stroke: #d8ebff;
+}
+
+.letter-circle.transfer-3,
+.io-letter.transfer-3,
+.reflector-letter.transfer-3,
+.socket.transfer-3,
+.reflector-socket.transfer-3 {
+  fill: var(--transfer3);
+  stroke: #ffe0f4;
+}
+
+.letter-circle.transfer-4,
+.io-letter.transfer-4,
+.reflector-letter.transfer-4,
+.socket.transfer-4,
+.reflector-socket.transfer-4 {
+  fill: var(--transfer4);
+  stroke: #f0ffd0;
+}
+
+.letter-circle.transfer-5,
+.io-letter.transfer-5,
+.reflector-letter.transfer-5,
+.socket.transfer-5,
+.reflector-socket.transfer-5 {
+  fill: var(--transfer5);
+  stroke: #d8ffe8;
+}
+
+.letter-circle.transfer-6,
+.io-letter.transfer-6,
+.reflector-letter.transfer-6,
+.socket.transfer-6,
+.reflector-socket.transfer-6 {
+  fill: var(--transfer6);
+  stroke: #e4e0ff;
+}
+
+.letter-circle.transfer-7,
+.io-letter.transfer-7,
+.reflector-letter.transfer-7,
+.socket.transfer-7,
+.reflector-socket.transfer-7 {
+  fill: var(--transfer7);
+  stroke: #ffe6d6;
+}
+
+.letter-circle.transfer-8,
+.io-letter.transfer-8,
+.reflector-letter.transfer-8,
+.socket.transfer-8,
+.reflector-socket.transfer-8 {
+  fill: var(--transfer8);
+  stroke: #d7fbff;
 }
 
 .letter-text,
