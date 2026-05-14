@@ -209,12 +209,12 @@ input[type="range"] {
 }
 
 #enigmaSvg {
-  width: min(96vw, 1200px);
+  width: min(98vw, 1400px);
   max-width: 100%;
   display: block;
 }
 
-.rotor-group {
+.rotor-inner {
   transform-box: fill-box;
   transform-origin: center;
   transition: transform 180ms ease-out;
@@ -246,7 +246,7 @@ input[type="range"] {
 
 .rotor-label {
   fill: var(--accent);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 950;
   text-anchor: middle;
 }
@@ -288,10 +288,25 @@ input[type="range"] {
   fill: #111;
 }
 
+.radial-wire {
+  fill: none;
+  stroke: #7d8798;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: .88;
+}
+
+.radial-wire.active {
+  stroke: var(--accent);
+  stroke-width: 6;
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(255,194,71,.9));
+}
+
 .wire {
   fill: none;
   stroke: var(--line);
-  stroke-width: 2.5;
+  stroke-width: 2.4;
   stroke-linejoin: round;
   stroke-linecap: round;
   opacity: .72;
@@ -317,15 +332,15 @@ input[type="range"] {
   filter: drop-shadow(0 0 10px rgba(255,194,71,.95));
 }
 
-.path-line {
+.bridge-line {
   fill: none;
   stroke: #586579;
   stroke-width: 4;
   stroke-linecap: round;
-  opacity: .75;
+  opacity: .62;
 }
 
-.path-line.active {
+.bridge-line.active {
   stroke: var(--accent);
   stroke-width: 8;
   opacity: 1;
@@ -349,6 +364,32 @@ input[type="range"] {
   font-size: 24px;
   text-anchor: middle;
   dominant-baseline: middle;
+}
+
+.io-letter {
+  fill: #0c121d;
+  stroke: #66748e;
+  stroke-width: 2;
+}
+
+.io-letter.active-in {
+  fill: var(--accent);
+}
+
+.io-letter.active-out {
+  fill: var(--green);
+}
+
+.io-text {
+  fill: white;
+  font-size: 14px;
+  font-weight: 950;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.io-text.dark {
+  fill: #111;
 }
 
 @media (max-width: 950px) {
