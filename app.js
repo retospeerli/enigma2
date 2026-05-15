@@ -872,16 +872,27 @@ function clearHighlights() {
   });
 }
 
-function highlightAlphabet(letter, direction) {
-  const item = ioLetters[letter];
+function markRotorPoint(key, letter, transferClass) {
+  const visual = rotorVisuals[key];
 
-  if (!item) return;
+  visual.letterMap[letter]?.circle.classList.add(transferClass);
+  visual.letterMap[letter]?.text.classList.add("dark");
 
-  item.circle.classList.add(direction);
-  item.text.classList.add("dark");
+  visual.socketMap[letter]?.forEach(socket => {
+    socket.classList.add(transferClass);
+  });
 }
 
-function highlightTransferOnAlphabet(letter, transferClass) {
+function markReflectorPoint(letter, transferClass) {
+  reflectorVisual.letterMap[letter]?.circle.classList.add(transferClass);
+  reflectorVisual.letterMap[letter]?.text.classList.add("dark");
+
+  reflectorVisual.socketMap[letter]?.forEach(socket => {
+    socket.classList.add(transferClass);
+  });
+}
+
+function markAlphabetPoint(letter, transferClass) {
   const item = ioLetters[letter];
   if (!item) return;
 
@@ -889,79 +900,20 @@ function highlightTransferOnAlphabet(letter, transferClass) {
   item.text.classList.add("dark");
 }
 
-function highlightTransferOnRotor(key, letter, transferClass) {
+function highlightRotorWireOnly(key, step, direction) {
   const visual = rotorVisuals[key];
 
-  if (visual.letterMap[letter]) {
-    visual.letterMap[letter].circle.classList.add(transferClass);
-    visual.letterMap[letter].text.classList.add("dark");
-  }
+  visual.radialMap[step.screenInput]?.classList.add(direction);
+  visual.radialMap[step.screenOutput]?.classList.add(direction);
 
-  if (visual.socketMap[letter]) {
-    visual.socketMap[letter].forEach(socket => socket.classList.add(transferClass));
-  }
+  visual.wireMap[`${step.rotorInput}-${step.rotorOutput}`]?.classList.add(direction);
 }
 
-function highlightTransferOnReflector(letter, transferClass) {
-  if (reflectorVisual.letterMap[letter]) {
-    reflectorVisual.letterMap[letter].circle.classList.add(transferClass);
-    reflectorVisual.letterMap[letter].text.classList.add("dark");
-  }
-
-  if (reflectorVisual.socketMap[letter]) {
-    reflectorVisual.socketMap[letter].forEach(socket => socket.classList.add(transferClass));
-  }
-}
-
-function highlightRotorStep(key, step, direction) {
-  const visual = rotorVisuals[key];
-
-  const inLetter = step.screenInput;
-  const outLetter = step.screenOutput;
-
-  const rotorIn = step.rotorInput;
-  const rotorOut = step.rotorOutput;
-
-  visual.radialMap[inLetter]?.classList.add(direction);
-  visual.radialMap[outLetter]?.classList.add(direction);
-
-  visual.wireMap[`${rotorIn}-${rotorOut}`]?.classList.add(direction);
-}
-
-function highlightReflector(step) {
-  const inLetter = step.screenInput;
-  const outLetter = step.screenOutput;
-
-  reflectorVisual.wireMap[`${inLetter}-${outLetter}`]?.classList.add(
+function highlightReflectorWireOnly(step) {
+  reflectorVisual.wireMap[`${step.screenInput}-${step.screenOutput}`]?.classList.add(
     "active-forward",
     "active-back"
   );
-}
-
-function highlightTransfers(trace) {
-  highlightTransferOnAlphabet(trace[0].letter, "transfer-1");
-  highlightTransferOnRotor("right", trace[1].screenInput, "transfer-1");
-
-  highlightTransferOnRotor("right", trace[1].screenOutput, "transfer-2");
-  highlightTransferOnRotor("middle", trace[2].screenInput, "transfer-2");
-
-  highlightTransferOnRotor("middle", trace[2].screenOutput, "transfer-3");
-  highlightTransferOnRotor("left", trace[3].screenInput, "transfer-3");
-
-  highlightTransferOnRotor("left", trace[3].screenOutput, "transfer-4");
-  highlightTransferOnReflector(trace[4].screenInput, "transfer-4");
-
-  highlightTransferOnReflector(trace[4].screenOutput, "transfer-5");
-  highlightTransferOnRotor("left", trace[5].screenInput, "transfer-5");
-
-  highlightTransferOnRotor("left", trace[5].screenOutput, "transfer-6");
-  highlightTransferOnRotor("middle", trace[6].screenInput, "transfer-6");
-
-  highlightTransferOnRotor("middle", trace[6].screenOutput, "transfer-7");
-  highlightTransferOnRotor("right", trace[7].screenInput, "transfer-7");
-
-  highlightTransferOnRotor("right", trace[7].screenOutput, "transfer-8");
-  highlightTransferOnAlphabet(trace[8].letter, "transfer-8");
 }
 
 function prepareRun() {
@@ -1020,54 +972,100 @@ async function processOneCharacter() {
   const outputLetter = trace[8].letter;
 
   updateBridgeVisuals(trace);
-  highlightTransfers(trace);
 
   stepState.textContent = `${char} → ?`;
+
+  markAlphabetPoint(trace[0].letter, "transfer-1");
+  await wait(phaseDuration());
 
   bridgeLines.alphabetToRight.classList.add("active-forward");
   await wait(phaseDuration());
 
-  highlightRotorStep("right", trace[1], "active-forward");
+  markRotorPoint("right", trace[1].screenInput, "transfer-1");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("right", trace[1], "active-forward");
+  await wait(phaseDuration());
+
+  markRotorPoint("right", trace[1].screenOutput, "transfer-2");
   await wait(phaseDuration());
 
   bridgeLines.rightToMiddle.classList.add("active-forward");
   await wait(phaseDuration());
 
-  highlightRotorStep("middle", trace[2], "active-forward");
+  markRotorPoint("middle", trace[2].screenInput, "transfer-2");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("middle", trace[2], "active-forward");
+  await wait(phaseDuration());
+
+  markRotorPoint("middle", trace[2].screenOutput, "transfer-3");
   await wait(phaseDuration());
 
   bridgeLines.middleToLeft.classList.add("active-forward");
   await wait(phaseDuration());
 
-  highlightRotorStep("left", trace[3], "active-forward");
+  markRotorPoint("left", trace[3].screenInput, "transfer-3");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("left", trace[3], "active-forward");
+  await wait(phaseDuration());
+
+  markRotorPoint("left", trace[3].screenOutput, "transfer-4");
   await wait(phaseDuration());
 
   bridgeLines.leftToReflector.classList.add("active-forward");
   await wait(phaseDuration());
 
-  highlightReflector(trace[4]);
+  markReflectorPoint(trace[4].screenInput, "transfer-4");
+  await wait(phaseDuration());
+
+  highlightReflectorWireOnly(trace[4]);
+  await wait(phaseDuration());
+
+  markReflectorPoint(trace[4].screenOutput, "transfer-5");
   await wait(phaseDuration());
 
   bridgeLines.reflectorToLeft.classList.add("active-back");
   await wait(phaseDuration());
 
-  highlightRotorStep("left", trace[5], "active-back");
+  markRotorPoint("left", trace[5].screenInput, "transfer-5");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("left", trace[5], "active-back");
+  await wait(phaseDuration());
+
+  markRotorPoint("left", trace[5].screenOutput, "transfer-6");
   await wait(phaseDuration());
 
   bridgeLines.leftToMiddleBack.classList.add("active-back");
   await wait(phaseDuration());
 
-  highlightRotorStep("middle", trace[6], "active-back");
+  markRotorPoint("middle", trace[6].screenInput, "transfer-6");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("middle", trace[6], "active-back");
+  await wait(phaseDuration());
+
+  markRotorPoint("middle", trace[6].screenOutput, "transfer-7");
   await wait(phaseDuration());
 
   bridgeLines.middleToRightBack.classList.add("active-back");
   await wait(phaseDuration());
 
-  highlightRotorStep("right", trace[7], "active-back");
+  markRotorPoint("right", trace[7].screenInput, "transfer-7");
+  await wait(phaseDuration());
+
+  highlightRotorWireOnly("right", trace[7], "active-back");
+  await wait(phaseDuration());
+
+  markRotorPoint("right", trace[7].screenOutput, "transfer-8");
   await wait(phaseDuration());
 
   bridgeLines.rightToAlphabet.classList.add("active-back");
   await wait(phaseDuration());
+
+  markAlphabetPoint(outputLetter, "transfer-8");
 
   outputText += outputLetter;
   writeOutput();
